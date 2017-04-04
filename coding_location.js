@@ -1,6 +1,7 @@
 var fs = require('fs'); 
 var parse = require('csv-parse');
 var node_geo = require('node-geocoder');
+//var sleep = require('sleep')
 
 var csvData=[];
 var latDict={};
@@ -34,33 +35,46 @@ function getPlace(x) {
         });
 }
 
+function sleep(time) {
+    var stop = new Date().getTime();
+    while(new Date().getTime() < stop + time) {
+        ;
+    }
+}
+
 fs.createReadStream("VehicleDetails.csv")
     .pipe(parse({delimiter: ','}))	// parsed the data from VehicleDetails
     .on('data', function(csvrow) {
-        var datum = csvrow[19];
-        var x = datum.split(" - ");
-        x = x[1]+" "+x[0];
-        if (x in latDict) {
-            console.log(latDict[x]);
-            console.log(longDict[x]);
-        } else {
-            //console.log(datum);
-            //console.log(x);
-            setTimeout(getPlace, 100, x)
-        }
-        counter += 1;
-        //csvrow contains data for this row.
-        //push it to data for all rows.
-        csvData.push(csvrow);        
+        console.log(csvrow);
+        csvData.push(csvrow);
     })
     .on('end',function() {
-        //csvData contains data for all rows.
-        //print out everything
+        console.log("getting data from geocoder");
+        for (var i = 1; i< csvData.length; i++) {
+            var csvrow = csvData[i];
+            var datum = csvrow[19];
+            var x = datum.split(" - ");
+            x = x[1]+" "+x[0];
+            if (x in latDict) {
+                console.log(latDict[x]);
+                console.log(longDict[x]);
+                sleep(30);
+            } else {
+                //console.log(datum);
+                console.log(x);
+                getPlace(x);
+                sleep(30);
+            }
+        }
         //console.log(csvData);
         flag = false;
     });
 
 function update() {
+    if(flag) {
+        setTimeout(update, 3000);
+        return;
+    }
     var i=0;
     var data = "";
     //console.log(csvData);
@@ -82,7 +96,4 @@ function update() {
     console.log("works.csv has been saved.")
 }
 
-while(flag != true) {
-}
-while(check_counter < counter)
-update()
+setTimeout(update, 5000)
